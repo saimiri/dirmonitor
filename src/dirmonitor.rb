@@ -109,8 +109,6 @@ until interrupted do
     puts "Checking #{source_dir}"
     # TODO: Add check for dir existence here
     Dir.foreach(source_dir) do |item|
-      # item is just the filename, no directory
-      # filename = File.basename(item)
       if item[0] == tag_prefix && (skip_part_files && item[-5..-1] == ".part")
         nameparts = item.split(filename_prefix)
         # Returns the tags (removes the first, empty one)
@@ -126,7 +124,9 @@ until interrupted do
           ruletags = rules[i]['tags']
           is_dump_rule = rules[i]['path'][-1] == '*'
           
+          # If the rule has more tags than filename, it cannot match
           if ruletags.length <= tags.length
+            # Get common tags from the two arrays
             intersection = tags & ruletags
             int_length = intersection.length
             
@@ -152,8 +152,6 @@ until interrupted do
                 # puts "Found partial match"
                 match_tag_count = int_length
                 match_rule = i
-              else
-                puts "#{match_tag_count} > #{int_length}"
               end
             end
           end
