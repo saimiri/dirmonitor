@@ -6,7 +6,7 @@ require 'yaml'
 # whose name contains #tags it moves it to a location specified by
 # configuration rules. See dirmonitor_sample.yml for example configuration.
 # 
-# Author::			Juha Auvinen (info@saimiri.fi)
+# Author::			Juha Auvinen (info.pleasenospam@saimiri.fi)
 # Copyright::		Copyright 2014 Saimiri Design
 # License::			Apache 2.0
 
