@@ -1,0 +1,17 @@
+# Create missing directories
+create_dirs : true
+# Do not overwrite existing files
+overwrite_files : false
+# Check specified directory/ies every 30 seconds
+check_interval : 30
+rules:
+   # Matches if filename contains #foo and #bar both but no other tags
+ - path : "z:/foobar"
+   tags : "foo, bar"
+   # Matches if filename contains only #images but no other tags
+ - path : "z:/fubar/images"
+   tags : "images"
+  # Asterisk means that only #misc needs to match and every other
+  # tag is used to create nested directories under z:/dumpster
+ - path : "z:/dumpster/*"
+   tags : "misc"
