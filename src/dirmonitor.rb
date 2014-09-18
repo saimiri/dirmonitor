@@ -109,7 +109,10 @@ until interrupted do
     puts "Checking #{source_dir}"
     # TODO: Add check for dir existence here
     Dir.foreach(source_dir) do |item|
-      if item[0] == tag_prefix && (skip_part_files && item[-5..-1] == ".part")
+      if item[0] == tag_prefix
+        if item[-5..-1] == ".part" && skip_part_files
+          next          
+        end
         nameparts = item.split(filename_prefix)
         # Returns the tags (removes the first, empty one)
         tags = nameparts[0].split(tag_prefix)[1..-1]
