@@ -1,6 +1,7 @@
 # encoding: utf-8
 require 'fileutils'
 require 'yaml'
+require 'date'
 
 # A simple Ruby script that monitors given directories. When it finds a file
 # whose name contains #tags it moves it to a location specified by
@@ -62,6 +63,12 @@ source_dirs = []
 # Has user signaled for the script to be interrupted?
 interrupted = false
 
+# How many checks have been made in total
+checks_done = 0;
+
+# We indent some lines for easier reading
+indent = "    "
+
 # Parse command line arguments. Assume one may be YAML config file, others
 # are directories to be monitored.
 ARGV.each_index do |i|
@@ -101,13 +108,20 @@ trap("INT") {
 }
 
 puts "Press Ctrl-C to exit"
+puts "--------------------------------------------------"
 
 # The main loop
 until interrupted do
   check_running = true
+  checks_done = checks_done + 1
+  current_time = Time.now.strftime("%H:%M:%S")
+  puts "Round #{checks_done} @ #{current_time}"
   source_dirs.each do |source_dir|
-    puts "Checking #{source_dir}"
-    # TODO: Add check for dir existence here
+    if !File.directory?(source_dir)
+      puts "#{indent}#{source_dir} doesn't exist. Skipping..."
+      next
+    end
+    puts "#{indent}Checking #{source_dir}"
     Dir.foreach(source_dir) do |item|
       if item[0] == tag_prefix
         if item[-5..-1] == ".part" && skip_part_files
@@ -118,14 +132,11 @@ until interrupted do
         tags = nameparts[0].split(tag_prefix)[1..-1]
         
         matched_path = ''
-        match_rule = -1
-        match_tag_count = 0
-        dump_match_rule = -1
-        dump_match_tag_count = 0
+        best_matching_rule = -1
+        best_match_tag_count = 0
         
         rules.each_index do |i|
           ruletags = rules[i]['tags']
-          is_dump_rule = rules[i]['path'][-1] == '*'
           
           # If the rule has more tags than filename, it cannot match
           if ruletags.length <= tags.length
@@ -133,61 +144,44 @@ until interrupted do
             intersection = tags & ruletags
             int_length = intersection.length
             
-            if int_length > 0
+            if int_length > 0 && int_length >= best_match_tag_count
+              best_match_tag_count = int_length
+              best_matching_rule = i
               if int_length == tags.length
-                puts "Found exact match"
-                if is_dump_rule
-                  # We need to remove the slash and the star from the end
-                  matched_path = rules[i]['path'][0..-3]
-                else
-                  matched_path = rules[i]['path']
-                end
                 break
-              end
-              
-              # Check for dump rules
-              if is_dump_rule && int_length > dump_match_tag_count
-                # puts "Found dump match"
-                dump_match_tag_count = int_length
-                dump_match_rule = i
-              # Check for partial matches
-              elsif int_length > match_tag_count
-                # puts "Found partial match"
-                match_tag_count = int_length
-                match_rule = i
               end
             end
           end
           
         end # rules.each_index
         
-        if matched_path == ''
-          if dump_match_tag_count == 0 && match_tag_count == 0
-            puts "No match found for #{item}"
-            next
-          elsif match_tag_count > dump_match_tag_count
-            puts "Found a partial match"
-            matched_path = rules[match_rule]['path']
-          else
+        if best_match_tag_count == 0
+          puts "#{indent}#{indent}No match found for #{item}"
+          next
+        else
+          the_rule = rules[best_matching_rule]
+          is_dump_rule = the_rule['path'][-1] == '*'
+          
+          if is_dump_rule
             # TODO: There should be some logic in ordering extra tags, so that
             # #foo#bar creates same directory structure as #bar#foo. Now they
             # are used in the order given, which may not be the best choice.
             # At least it should be an option.
-            puts "Found a dump match"
-            dump_rule = rules[dump_match_rule]
-            tag_diff = tags - dump_rule['tags']
-            matched_path = dump_rule['path'][0..-2] + tag_diff.join('/')
+            tag_diff = tags - the_rule['tags']
+            matched_path = the_rule['path'][0..-2] + tag_diff.join('/')
+          else
+            matched_path = the_rule['path']
           end
         end
         
         # At this point we should have a target path. If not, there is a bug. =(
         if !File.directory?(matched_path)
           if create_dirs == true
-            puts "#{matched_path} doesn't exist, creating directory..."
+            puts "#{indent}#{indent}#{matched_path} doesn't exist, creating directory..."
             # TODO: Add error checking here
             FileUtils.mkdir_p(matched_path)
           else
-            puts "#{matched_path} doesn't exist, create_dirs == false. Skipping..."
+            puts "#{indent}#{indent}#{matched_path} doesn't exist, create_dirs == false. Skipping..."
             next
           end
         end
@@ -196,10 +190,11 @@ until interrupted do
         target_file = matched_path + '/' + nameparts.last
 
         if !File.file?(target_file) || overwrite_files
-          puts "Moving file... #{source_file} to #{target_file}"
+          puts "#{indent}#{indent}Moving #{source_file}"
+          puts "#{indent}#{indent} => #{target_file}"
           FileUtils.mv(source_file, target_file)
         else
-          puts "#{target_file} exists, overwrite_files == false. Skipping..."
+          puts "#{indent}#{indent}#{target_file} exists, overwrite_files == false. Skipping..."
           next
         end
       end # if item[0]
@@ -209,6 +204,7 @@ until interrupted do
   if interrupted
     exit
   end
-  puts "Sleeping for #{check_interval} seconds"
+  puts "Sleeping for #{check_interval} seconds... (-.-)zzZ"
+  puts "--------------------------------------------------"
   sleep check_interval
 end # until interrupted do
