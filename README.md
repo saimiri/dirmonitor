@@ -92,3 +92,7 @@ rules:
  - path : "z:/dumpster/*"
    tags : "misc"
 ```
+## Disclaimer
+
+  - **My first Ruby script ever:** code may not be up to your standards
+  - **Written for personal use:** it works => good enough
