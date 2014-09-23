@@ -160,9 +160,8 @@ until interrupted do
           next
         else
           the_rule = rules[best_matching_rule]
-          is_dump_rule = the_rule['path'][-1] == '*'
           
-          if is_dump_rule
+          if the_rule['path'][-1] == '*'
             # TODO: There should be some logic in ordering extra tags, so that
             # #foo#bar creates same directory structure as #bar#foo. Now they
             # are used in the order given, which may not be the best choice.
