@@ -80,6 +80,22 @@ ARGV.each_index do |i|
   end
 end
 
+def format(message, type)
+  case type
+  when "error"
+    # Red
+    sprintf "\033[31m#{message}\033[0m"
+  when "warning"
+    # Yellow
+    sprintf "\033[33m#{message}\033[0m"
+  when "success"
+    # Green
+    sprintf "\033[32m#{message}\033[0m"
+  else
+    message
+  end
+end
+
 # If config file was found, parse it and use it to override default settings.
 if config
   rule_list = config["rules"]
@@ -101,25 +117,25 @@ end
 trap("INT") {
   interrupted = true
   if check_running == false
-    puts "Exiting script"
+    puts "\nExiting script"
     exit
   else
-    puts "Exiting after check is complete"
+    puts "\nExiting after check is complete"
   end
 }
 
 puts "Press Ctrl-C to exit"
-puts "--------------------------------------------------"
 
 # The main loop
 until interrupted do
   check_running = true
   checks_done = checks_done + 1
   current_time = Time.now.strftime("%H:%M:%S")
+  puts "--------------------------------------------------"
   puts "Round #{checks_done} @ #{current_time}"
   source_dirs.each do |source_dir|
     if !File.directory?(source_dir)
-      puts "#{indent}#{source_dir} doesn't exist. Skipping..."
+      puts format("#{indent}#{source_dir} doesn't exist. Skipping...", "error")
       next
     end
     puts "#{indent}Checking #{source_dir}"
@@ -157,7 +173,7 @@ until interrupted do
         end # rules.each_index
         
         if best_match_tag_count == 0
-          puts "#{indent}#{indent}No match found for #{item}"
+          puts format("#{indent}#{indent}No matches found for #{item}", "warning")
           next
         else
           the_rule = rules[best_matching_rule]
@@ -181,7 +197,7 @@ until interrupted do
             # TODO: Add error checking here
             FileUtils.mkdir_p(matched_path)
           else
-            puts "#{indent}#{indent}#{matched_path} doesn't exist, create_dirs == false. Skipping..."
+            puts format("#{indent}#{indent}#{matched_path} doesn't exist, create_dirs == false. Skipping...", "warning")
             next
           end
         end
@@ -190,11 +206,11 @@ until interrupted do
         target_file = matched_path + '/' + nameparts.last
 
         if !File.file?(target_file) || overwrite_files
-          puts "#{indent}#{indent}Moving #{source_file}"
-          puts "#{indent}#{indent} => #{target_file}"
+          puts format("#{indent}#{indent}Moving #{source_file}", "success")
+          puts format("#{indent}#{indent} => #{target_file}", "success")
           FileUtils.mv(source_file, target_file)
         else
-          puts "#{indent}#{indent}#{target_file} exists, overwrite_files == false. Skipping..."
+          puts format("#{indent}#{indent}#{target_file} exists, overwrite_files == false. Skipping...", "warning")
           next
         end
       end # if item[0]
@@ -204,7 +220,17 @@ until interrupted do
   if interrupted
     exit
   end
-  puts "Sleeping for #{check_interval} seconds... (-.-)zzZ"
-  puts "--------------------------------------------------"
-  sleep check_interval
+  printf "Sleeping for #{check_interval} seconds... back in \033[s\033[32m#{check_interval}\033[0m"
+  countdown = check_interval
+  check_interval.times do
+    sleep 1
+    countdown -= 1
+    # char_len = countdown.to_s.size
+    printf "\033[u\033[0K"
+    print "\033[32m#{countdown}\033[0m"
+    # printf "\033[0"
+    # STDOUT.flush
+  end
+  printf "\n"
+  # sleep check_interval
 end # until interrupted do
