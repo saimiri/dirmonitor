@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # encoding: utf-8
 require 'fileutils'
 require 'yaml'
@@ -45,7 +46,7 @@ tag_prefix = '#'
 # What character(s) separates the tags from the actual filename
 filename_prefix = '='
 
-# Browsers user .part extension for incomplete downloads so it's not a
+# Browsers use .part extension for incomplete downloads so it's not a
 # good idea to move them around. Unless you really know what you're doing.
 skip_part_files = true
 
