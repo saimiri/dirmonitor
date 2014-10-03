@@ -63,6 +63,7 @@ The order of parameters is not significant, ie. you may give configuration file 
 | tag_prefix			| string		 | What is the prefix for tags (default: "#") |
 | filename_prefix | string		 | What character(s) separates the tags from the actual filename (default: "=") |
 | skip_part_files | true/false | Should files with .part extension be skipped? (default: true) |
+| use_ansi_colors | true/false | If set to true and your console supports ANSI escape codes, shows prettier output (default: false) |
 
 ## Please note
 
