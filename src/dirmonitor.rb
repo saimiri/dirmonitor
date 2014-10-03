@@ -50,6 +50,9 @@ filename_prefix = '='
 # good idea to move them around. Unless you really know what you're doing.
 skip_part_files = true
 
+# Should ANSI escape characters used to display color output
+use_ansi_colors = false
+
 # CODE STARTS ------------------------------------------------------------------
 
 # Config file
@@ -80,19 +83,29 @@ ARGV.each_index do |i|
   end
 end
 
-def format(message, type)
-  case type
-  when "error"
-    # Red
-    sprintf "\033[31m#{message}\033[0m"
-  when "warning"
-    # Yellow
-    sprintf "\033[33m#{message}\033[0m"
-  when "success"
-    # Green
-    sprintf "\033[32m#{message}\033[0m"
-  else
+# Dull formatter class if no ANSI colors are used
+class NoColorFormatter
+  def format(message, type)
     message
+  end
+end
+
+# A much more fun formatter that displays pretty, pretty colors
+class AnsiColorFormatter
+  def format(message, type)
+    case type
+    when "error"
+      # Red
+      sprintf "\033[31m#{message}\033[0m"
+    when "warning"
+      # Yellow
+      sprintf "\033[33m#{message}\033[0m"
+    when "success"
+      # Green
+      sprintf "\033[32m#{message}\033[0m"
+    else
+      message
+    end
   end
 end
 
@@ -110,7 +123,11 @@ if config
   filename_prefix = config["filename_prefix"] || filename_prefix
   tag_prefix = config["tag_prefix"] || tag_prefix
   skip_part_files = config["skip_part_files"] || skip_part_files
+  use_ansi_colors = config["use_ansi_colors"] || use_ansi_colors
 end
+
+# Right, I'm not going to comment this
+formatter = use_ansi_colors == true ? AnsiColorFormatter.new : NoColorFormatter.new
 
 # Trap CTRL-C as a signal to exit the script. Do not exit if a directory
 # check is running.
@@ -135,7 +152,7 @@ until interrupted do
   puts "Round #{checks_done} @ #{current_time}"
   source_dirs.each do |source_dir|
     if !File.directory?(source_dir)
-      puts format("#{indent}#{source_dir} doesn't exist. Skipping...", "error")
+      puts formatter.format("#{indent}#{source_dir} doesn't exist. Skipping...", "error")
       next
     end
     puts "#{indent}Checking #{source_dir}"
@@ -173,7 +190,7 @@ until interrupted do
         end # rules.each_index
         
         if best_match_tag_count == 0
-          puts format("#{indent}#{indent}No matches found for #{item}", "warning")
+          puts formatter.format("#{indent}#{indent}No matches found for #{item}", "warning")
           next
         else
           the_rule = rules[best_matching_rule]
@@ -197,7 +214,7 @@ until interrupted do
             # TODO: Add error checking here
             FileUtils.mkdir_p(matched_path)
           else
-            puts format("#{indent}#{indent}#{matched_path} doesn't exist, create_dirs == false. Skipping...", "warning")
+            puts formatter.format("#{indent}#{indent}#{matched_path} doesn't exist, create_dirs == false. Skipping...", "warning")
             next
           end
         end
@@ -206,11 +223,11 @@ until interrupted do
         target_file = matched_path + '/' + nameparts.last
 
         if !File.file?(target_file) || overwrite_files
-          puts format("#{indent}#{indent}Moving #{source_file}", "success")
-          puts format("#{indent}#{indent} => #{target_file}", "success")
+          puts formatter.format("#{indent}#{indent}Moving #{source_file}", "success")
+          puts formatter.format("#{indent}#{indent} => #{target_file}", "success")
           FileUtils.mv(source_file, target_file)
         else
-          puts format("#{indent}#{indent}#{target_file} exists, overwrite_files == false. Skipping...", "warning")
+          puts formatter.format("#{indent}#{indent}#{target_file} exists, overwrite_files == false. Skipping...", "warning")
           next
         end
       end # if item[0]
@@ -220,17 +237,23 @@ until interrupted do
   if interrupted
     exit
   end
-  printf "Sleeping for #{check_interval} seconds... back in \033[s\033[32m#{check_interval}\033[0m"
-  countdown = check_interval
-  check_interval.times do
-    sleep 1
-    countdown -= 1
-    # char_len = countdown.to_s.size
-    printf "\033[u\033[0K"
-    print "\033[32m#{countdown}\033[0m"
-    # printf "\033[0"
-    # STDOUT.flush
+  if use_ansi_colors == true
+    # If we have ANSI escape codes available, we are darn well going to use
+    # them to display a nifty countdown counter
+    printf "Sleeping for #{check_interval} seconds... back in \033[s\033[32m#{check_interval}\033[0m"
+    countdown = check_interval
+    check_interval.times do
+      sleep 1
+      countdown -= 1
+      # char_len = countdown.to_s.size
+      printf "\033[u\033[0K"
+      print "\033[32m#{countdown}\033[0m"
+      # printf "\033[0"
+      # STDOUT.flush
+    end
+    printf "\n"
+  else
+    puts "Sleeping for #{check_interval} seconds..."
+    sleep check_interval
   end
-  printf "\n"
-  # sleep check_interval
 end # until interrupted do
