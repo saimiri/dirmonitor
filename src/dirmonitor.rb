@@ -94,13 +94,13 @@ end
 class AnsiColorFormatter
   def format(message, type)
     case type
-    when "error"
+    when :error
       # Red
       sprintf "\033[31m#{message}\033[0m"
-    when "warning"
+    when :warn
       # Yellow
       sprintf "\033[33m#{message}\033[0m"
-    when "success"
+    when :ok
       # Green
       sprintf "\033[32m#{message}\033[0m"
     else
@@ -152,7 +152,7 @@ until interrupted do
   puts "Round #{checks_done} @ #{current_time}"
   source_dirs.each do |source_dir|
     if !File.directory?(source_dir)
-      puts formatter.format("#{indent}#{source_dir} doesn't exist. Skipping...", "error")
+      puts formatter.format("#{indent}#{source_dir} doesn't exist. Skipping...", :error)
       next
     end
     puts "#{indent}Checking #{source_dir}"
@@ -190,7 +190,7 @@ until interrupted do
         end # rules.each_index
         
         if best_match_tag_count == 0
-          puts formatter.format("#{indent}#{indent}No matches found for #{item}", "warning")
+          puts formatter.format("#{indent}#{indent}No matches found for #{item}", :warn)
           next
         else
           the_rule = rules[best_matching_rule]
@@ -214,7 +214,7 @@ until interrupted do
             # TODO: Add error checking here
             FileUtils.mkdir_p(matched_path)
           else
-            puts formatter.format("#{indent}#{indent}#{matched_path} doesn't exist, create_dirs == false. Skipping...", "warning")
+            puts formatter.format("#{indent}#{indent}#{matched_path} doesn't exist, create_dirs == false. Skipping...", :warn)
             next
           end
         end
@@ -223,11 +223,11 @@ until interrupted do
         target_file = matched_path + '/' + nameparts.last
 
         if !File.file?(target_file) || overwrite_files
-          puts formatter.format("#{indent}#{indent}Moving #{source_file}", "success")
-          puts formatter.format("#{indent}#{indent} => #{target_file}", "success")
+          puts formatter.format("#{indent}#{indent}Moving #{source_file}", :ok)
+          puts formatter.format("#{indent}#{indent} => #{target_file}", :ok)
           FileUtils.mv(source_file, target_file)
         else
-          puts formatter.format("#{indent}#{indent}#{target_file} exists, overwrite_files == false. Skipping...", "warning")
+          puts formatter.format("#{indent}#{indent}#{target_file} exists, overwrite_files == false. Skipping...", :warn)
           next
         end
       end # if item[0]
